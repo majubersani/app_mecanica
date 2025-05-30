@@ -2,6 +2,7 @@ import flet as ft
 from flet import AppBar, Text, View, IconButton, ElevatedButton
 from flet.core.colors import Colors
 
+
 def main(page: ft.Page):
     # Configuração da página
     page.title = "Cadastro"

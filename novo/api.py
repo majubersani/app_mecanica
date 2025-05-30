@@ -1,10 +1,12 @@
 import requests
+from models import *
 def consultar_cliente():
     url = "http://127.0.0.1:5000/clientes"
     response_get_clientes = requests.get(url)
     if response_get_clientes.status_code == 200:
         dados_clientes = response_get_clientes.json()
-        print(f"\n id: {dados_clientes['id']}")
+        print(f"\n id: "
+              f"{dados_clientes['id']}")
         print(f"\n nome: {dados_clientes['nome']}")
         print(f"\n cpf: {dados_clientes['cpf']}")
         print(f"\n telefone: {dados_clientes['telefone']}")
