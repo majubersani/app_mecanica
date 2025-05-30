@@ -187,3 +187,4 @@ def main(page: ft.Page):
     page.go("/")
 
 ft.app(target=main)
+
