@@ -15,10 +15,12 @@ print(f"modo1:{url_}")
 config = configparser.ConfigParser()
 config.read('config.ini')
 # Obtenha as configurações do banco de dados
-database_url = config['database1']['url']
-print(f"mode2:{database_url}")
+# database_url = config['database']['url']
+# print(f"mode2:{database_url}")
 
-engine = create_engine('sqlite:///database.db')
+#Configuração da base de dados SQLite online e local
+#engine = create_engine(database_url) # conectar Vercel
+engine = create_engine('sqlite:///database.db') # conectar local alterado/substituído
 
 
 local_session = sessionmaker(bind=engine)
@@ -27,19 +29,19 @@ Base = declarative_base()
 #Base.query = db_session.query_property()
 
 
-class Cliente_Principal(Base):
-    __tablename__ = 'Cliente'
+class Cliente(Base):
+    __tablename__ = 'clientes'
+
     id_cliente = Column(Integer, primary_key=True)
     nome = Column(String(40), nullable=False, index=True)
-    telefone = Column(String(11), nullable=False, index=True, unique=True)
+    telefone = Column(String(11), nullable=False, unique=True, index=True)
     endereco = Column(String(40), nullable=False, index=True)
-    cpf = Column(String(11), nullable=False, index=True, unique=True)
-
+    cpf = Column(String(11), nullable=False, unique=True, index=True)
 
     def __repr__(self):
-        return '<Funcionario: Nome: {} CPF: {} Endereco: {} Telefone: {} >'.format(self.nome, self.cpf, self.endereco, self.telefone )
+        return f'<Cliente: Nome={self.nome}, CPF={self.cpf}, Endereco={self.endereco}, Telefone={self.telefone}>'
 
-    def save(self,db_session):
+    def save(self, db_session):
         db_session.add(self)
         db_session.commit()
 
@@ -48,31 +50,30 @@ class Cliente_Principal(Base):
         db_session.commit()
 
     def serialize_user(self):
-        dados_funcionario = {
+        return {
             'id': self.id_cliente,
             'nome': self.nome,
             'telefone': self.telefone,
             'endereco': self.endereco,
             'cpf': self.cpf,
-
         }
 
-        return dados_funcionario
+# ---------------------- MODELO: Veículos ----------------------
 
+class Veiculos(Base):
+    __tablename__ = 'veiculos'
 
-class Veiculos_Principal(Base):
-    __tablename__ = 'Veiculos_Principal'
     id = Column(Integer, primary_key=True)
-    id_cliente = Column(Integer,ForeignKey(Cliente_Principal.id_cliente))
+    id_cliente = Column(Integer, ForeignKey(Cliente.id_cliente))
     marca = Column(String(40), nullable=False, index=True)
     modelo = Column(String(40), nullable=False, index=True)
-    placa = Column(String(40), nullable=False, index=True)
+    placa = Column(String(40), nullable=False, unique=True, index=True)
     ano_de_fabricacao = Column(Integer, nullable=False, index=True)
 
-    def __repr__(self,):
-        return '<Veiculos_Principal: {} {} {} {} {} >'.format(self.marca, self.modelo, self.placa, self.ano_de_fabricacao, self.id_cliente)
+    def __repr__(self):
+        return f'<Veiculo: Marca={self.marca}, Modelo={self.modelo}, Placa={self.placa}, Ano={self.ano_de_fabricacao}, ClienteID={self.id_cliente}>'
 
-    def save(self,db_session):
+    def save(self, db_session):
         db_session.add(self)
         db_session.commit()
 
@@ -81,7 +82,7 @@ class Veiculos_Principal(Base):
         db_session.commit()
 
     def serialize_user(self):
-        dados_Veiculos_Principal = {
+        return {
             'id': self.id,
             'id_cliente': self.id_cliente,
             'marca': self.marca,
@@ -89,21 +90,23 @@ class Veiculos_Principal(Base):
             'placa': self.placa,
             'ano_de_fabricacao': self.ano_de_fabricacao,
         }
-        return dados_Veiculos_Principal
 
-class Servicos_Principal(Base):
-    __tablename__ = 'Servicos_Principal'
+# ---------------------- MODELO: Ordens de Serviço ----------------------
+
+class Ordens_de_servicos(Base):
+    __tablename__ = 'ordens_de_servicos'
+
     id_servicos = Column(Integer, primary_key=True)
-    Veiculos_Principal_associados = Column(String(40), nullable=False, index=True)
-    descricao_de_servico= Column(String(40), nullable=False, index=True)
-    data_de_abertura = Column(String(10), nullable=False, index=True, autoincrement=True)
-    status = Column(String(10), nullable=False)
+    veiculos_associados = Column(String(40), nullable=False, index=True)
+    descricao_de_servico = Column(String(100), nullable=False, index=True)
+    data_de_abertura = Column(String(10), nullable=False, index=True)
+    status = Column(String(20), nullable=False)
     valor_total = Column(Float, nullable=False, index=True)
 
     def __repr__(self):
-        return '<Servicos_Principal:  {} {} {} {} {} {}>'.format(self.id_servicos, self.Veiculos_Principal_associados, self.descricao_de_servico, self.data_de_abertura, self.status, self.valor_total)
+        return f'<OrdemServico: ID={self.id_servicos}, Veiculo={self.veiculos_associados}, Descricao={self.descricao_de_servico}, Data={self.data_de_abertura}, Status={self.status}, Valor={self.valor_total}>'
 
-    def save(self,db_session):
+    def save(self, db_session):
         db_session.add(self)
         db_session.commit()
 
@@ -112,22 +115,20 @@ class Servicos_Principal(Base):
         db_session.commit()
 
     def serialize_user(self):
-        dados_movimentacao = {
-
+        return {
             'id_servicos': self.id_servicos,
-            'Veiculos_Principal_associados': self.Veiculos_Principal_associados,
-            'descricao_de_servico':self.descricao_de_servico,
-            'status': self.status,
+            'veiculos_associados': self.veiculos_associados,
+            'descricao_de_servico': self.descricao_de_servico,
             'data_de_abertura': self.data_de_abertura,
+            'status': self.status,
             'valor_total': self.valor_total,
-
         }
 
-        return dados_movimentacao
-
+# ---------------------- CRIADOR DE TABELAS ----------------------
 
 def init_db():
     Base.metadata.create_all(bind=engine)
 
+# Executa a criação das tabelas se o arquivo for rodado diretamente
 if __name__ == '__main__':
     init_db()
