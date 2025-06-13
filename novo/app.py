@@ -15,8 +15,8 @@ def main(page: ft.Page):
             label=label,
             border_radius=10,
             filled=True,
-            fill_color=Colors.BLUE_50,
-            border_color=Colors.BLUE_300
+            fill_color=Colors.RED_100,
+            border_color=Colors.RED_300
         )
 
     input_nome = input_field("Nome:")
@@ -77,10 +77,10 @@ def main(page: ft.Page):
         return ft.Column(
             controls=[
                 ft.Image(src="Logos_app_py.png", width=350),
-                ft.ElevatedButton("Cadastrar Cliente", on_click=cadastrar_cliente, bgcolor=Colors.BLUE_700, color=Colors.WHITE),
-                ft.ElevatedButton("Cadastrar Veículo", on_click=cadastrar_veiculo, bgcolor=Colors.BLUE_700, color=Colors.WHITE),
-                ft.ElevatedButton("Cadastrar Ordem de Serviço", on_click=cadastrar_ordem, bgcolor=Colors.BLUE_700, color=Colors.WHITE),
-                ft.ElevatedButton("Ver Cadastrados", on_click=ver_cadastrados, bgcolor=Colors.WHITE, color=Colors.BLUE_700),
+                ft.ElevatedButton("Cadastrar Cliente", on_click=cadastrar_cliente, bgcolor=Colors.RED_700, color=Colors.WHITE),
+                ft.ElevatedButton("Cadastrar Veículo", on_click=cadastrar_veiculo, bgcolor=Colors.RED_700, color=Colors.WHITE),
+                ft.ElevatedButton("Cadastrar Ordem de Serviço", on_click=cadastrar_ordem, bgcolor=Colors.RED_700, color=Colors.WHITE),
+                ft.ElevatedButton("Ver Cadastrados", on_click=ver_cadastrados, bgcolor=Colors.WHITE, color=Colors.RED_700),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -95,8 +95,8 @@ def main(page: ft.Page):
                 ft.Container(ft.ElevatedButton("Salvar", on_click=on_save, expand=True), padding=5),
                 ft.Container(ft.ElevatedButton("Voltar", on_click=voltar, expand=True), padding=5),
             ],
-            appbar=AppBar(title=Text(f"Cadastrar {title}"), bgcolor=Colors.BLUE_800),
-            bgcolor=Colors.BLUE_50
+            appbar=AppBar(title=Text(f"Cadastrar {title}"), bgcolor=Colors.RED_800),
+            bgcolor=Colors.RED_100
         )
 
     def cliente_view():
@@ -117,16 +117,16 @@ def main(page: ft.Page):
                 *[ft.Text(f"{v['marca']} {v['modelo']} | {v['placa']} | {v['ano_fabricacao']}") for v in veiculos],
                 ft.Divider(),
                 *[ft.Text(f"{o['data_abertura']} | {o['descricao_servico']} | {o['status']} | R$ {o['valor_estimado']}") for o in ordens],
-                   ft.ElevatedButton("Voltar", on_click=voltar),
+                   ft.ElevatedButton("Voltar", on_click=voltar, color=Colors.RED_800),
             ],
-            appbar=AppBar(title=Text("Cadastrados"), bgcolor=Colors.BLUE_800),
-            bgcolor=Colors.BLUE_50
+            appbar=AppBar(title=Text("Cadastrados"), bgcolor=Colors.RED_800),
+            bgcolor=Colors.RED_100
         )
 
     def gerencia_rotas(route):
         page.views.clear()
         if page.route == "/":
-            page.views.append(View("/", [main_view()], bgcolor=Colors.BLUE_50))
+            page.views.append(View("/", [main_view()], bgcolor=Colors.RED_100))
         elif page.route == "/cliente":
             page.views.append(cliente_view())
         elif page.route == "/veiculo":
