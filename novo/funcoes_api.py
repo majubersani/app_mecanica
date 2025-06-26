@@ -91,8 +91,6 @@ def inserir_veiculo(id_cliente,marca, modelo, placa,ano_fabriacao):
         print(f"Erro: {response.status_code}")
         return response.json()
 
-
-
 def atualizar_veiculo(id):
     url = f"http://10.135.232.13:5000/veiculos/{id}"
     novo_veiculo = {

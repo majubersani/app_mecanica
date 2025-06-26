@@ -115,10 +115,10 @@ def main(page: ft.Page):
         return ft.Column(
             controls=[
                 ft.Image(src="Logos_app_py.png", width=350),
-                # ft.ElevatedButton("Cadastrar Cliente", on_click=lambda _:cadastrar_cliente, bgcolor=Colors.RED_700, color=Colors.WHITE),
-                # ft.ElevatedButton("Cadastrar Veículo", on_click=lambda _:cadastrar_veiculo, bgcolor=Colors.RED_700, color=Colors.WHITE),
-                # ft.ElevatedButton("Cadastrar Ordem de Serviço", on_click=lambda _:cadastrar_ordem, bgcolor=Colors.RED_700, color=Colors.WHITE),
-                # ft.ElevatedButton("Ver Cadastrados", on_click=lambda _:ver_cadastrados, bgcolor=Colors.WHITE, color=Colors.RED_700),
+                ft.ElevatedButton("Cadastrar Cliente", on_click=cadastrar_cliente, bgcolor=Colors.RED_700, color=Colors.WHITE),
+                ft.ElevatedButton("Cadastrar Veículo", on_click=cadastrar_veiculo, bgcolor=Colors.RED_700, color=Colors.WHITE),
+                ft.ElevatedButton("Cadastrar Ordem de Serviço", on_click=cadastrar_ordem, bgcolor=Colors.RED_700, color=Colors.WHITE),
+                ft.ElevatedButton("Ver Cadastrados", on_click=ver_cadastrados, bgcolor=Colors.WHITE, color=Colors.RED_700),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -167,7 +167,7 @@ def main(page: ft.Page):
             page.views.append(
                 View("/",
                      [
-                    # main_view()
+                    main_view()
                 ]
                      , bgcolor=Colors.RED_100))
         elif page.route == "/cliente":
