@@ -1,7 +1,8 @@
 import requests
 from models import *
+
 def consultar_cliente():
-    url = "http://127.0.0.1:5000/clientes"
+    url = "http://10.135.232.13:5000/lista_clientes"
     response_get_clientes = requests.get(url)
     if response_get_clientes.status_code == 200:
         dados_clientes = response_get_clientes.json()
@@ -11,10 +12,13 @@ def consultar_cliente():
         print(f"\n cpf: {dados_clientes['cpf']}")
         print(f"\n telefone: {dados_clientes['telefone']}")
         print(f"\n endereco: {dados_clientes['endereco']}")
+        return dados_clientes
     else:
         print(f"Erro: {response_get_clientes.status_code}")
+
+consultar_cliente()
 def inserir_cliente():
-    url = "http://127.0.0.1:5000/criar_cliente"
+    url = "http://10.135.232.13:5000/criar_cliente"
     novo_cliente = {
         "nome": "",
         "cpf": "",
@@ -27,8 +31,10 @@ def inserir_cliente():
         print(f"\n cpf: {novo_cliente['cpf']}")
     else:
         print(f"Erro: {response.status_code}")
+
+
 def atualizar_cliente(id):
-    url = f"http://127.0.0.1:5000/clientes/{id}"
+    url = f"http://10.135.232.13:5000/clientes/{id}"
     novo_cliente = {
         "id": id,
         "nome": "",
@@ -49,8 +55,10 @@ def atualizar_cliente(id):
               f"\n telefone: {dados_cliente['telefone']} \n endereco: {dados_cliente['endereco']}")
     else:
         print(f"Erro: {response.status_code}")
+
+
 def consultar_veiculo():
-    url = "http://127.0.0.1:5000/veiculos"
+    url = "http://10.135.232.13:5000/veiculos"
     response_get_veiculos = requests.get(url)
     if response_get_veiculos.status_code == 200:
         dados_veiculos = response_get_veiculos.json()
@@ -61,13 +69,16 @@ def consultar_veiculo():
         print(f"\n ano_fabricacao: {dados_veiculos['ano_fabricacao']}")
     else:
         print(f"Erro: {response_get_veiculos.status_code}")
-def inserir_veiculo():
-    url = "http://127.0.0.1:5000/veiculos"
+
+
+def inserir_veiculo(id_cliente,marca, modelo, placa,ano_fabriacao):
+    url = "http://10.135.232.13:5000/cadastro_veiculo"
     novo_veiculo = {
-        "marca": "",
-        "modelo": "",
-        "placa": "",
-        "ano_fabricacao": "", }
+        "id_cliente": id_cliente,
+        "marca": marca,
+        "modelo": modelo,
+        "placa": placa,
+        "ano_fabricacao": ano_fabriacao}
     response = requests.post(url, json=novo_veiculo)
     if response.status_code == 201:
         novo_veiculo = response.json()
@@ -75,10 +86,15 @@ def inserir_veiculo():
         print(f"\n modelo: {novo_veiculo['modelo']}")
         print(f"\n placa: {novo_veiculo['placa']}")
         print(f"\n ano_fabricacao: {novo_veiculo['ano_fabricacao']}")
+        return response.json()
     else:
         print(f"Erro: {response.status_code}")
+        return response.json()
+
+
+
 def atualizar_veiculo(id):
-    url = f"http://127.0.0.1:5000/veiculos/{id}"
+    url = f"http://10.135.232.13:5000/veiculos/{id}"
     novo_veiculo = {
         "id": id,
         "marca": "",
@@ -104,7 +120,7 @@ def atualizar_veiculo(id):
 
 
 def consultar_ordem():
-    url = "http://127.0.0.1:5000/ordens"
+    url = "http://10.135.232.13:5000/ordens"
     response_get_ordens = requests.get(url)
     if response_get_ordens.status_code == 200:
         dados_ordens = response_get_ordens.json()
@@ -118,7 +134,7 @@ def consultar_ordem():
 
 
 def inserir_ordem():
-    url = "http://127.0.0.1:5000/ordens"
+    url = "http://10.135.232.13:5000/ordens"
 
     nova_ordem = {
         "veiculo_id": "",
@@ -144,7 +160,7 @@ def inserir_ordem():
 
 
 def atualizar_ordem(id):
-    url = f"http://127.0.0.1:5000/ordens/{id}"
+    url = f"http://10.135.232.13:5000/ordens/{id}"
 
     nova_ordem = {
         "id": id,

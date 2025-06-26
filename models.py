@@ -58,8 +58,6 @@ class Cliente(Base):
             'cpf': self.cpf,
         }
 
-# ---------------------- MODELO: Veículos ----------------------
-
 class Veiculos(Base):
     __tablename__ = 'veiculos'
 
@@ -91,8 +89,6 @@ class Veiculos(Base):
             'ano_de_fabricacao': self.ano_de_fabricacao,
         }
 
-# ---------------------- MODELO: Ordens de Serviço ----------------------
-
 class Ordens_de_servicos(Base):
     __tablename__ = 'ordens_de_servicos'
 
@@ -104,7 +100,12 @@ class Ordens_de_servicos(Base):
     valor_total = Column(Float, nullable=False, index=True)
 
     def __repr__(self):
-        return f'<OrdemServico: ID={self.id_servicos}, Veiculo={self.veiculos_associados}, Descricao={self.descricao_de_servico}, Data={self.data_de_abertura}, Status={self.status}, Valor={self.valor_total}>'
+        return (f'<OrdemServico: ID={self.id_servicos}, '
+                f'Veiculo={self.veiculos_associados},'
+                f' Descricao={self.descricao_de_servico}, '
+                f'Data={self.data_de_abertura}, '
+                f'Status={self.status},'
+                f' Valor={self.valor_total}>')
 
     def save(self, db_session):
         db_session.add(self)
@@ -123,8 +124,6 @@ class Ordens_de_servicos(Base):
             'status': self.status,
             'valor_total': self.valor_total,
         }
-
-# ---------------------- CRIADOR DE TABELAS ----------------------
 
 def init_db():
     Base.metadata.create_all(bind=engine)
