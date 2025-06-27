@@ -1,189 +1,243 @@
 import requests
-from models import *
+import json
 
-def consultar_cliente():
-    url = "http://10.135.232.13:5000/lista_clientes"
-    response_get_clientes = requests.get(url)
-    if response_get_clientes.status_code == 200:
-        dados_clientes = response_get_clientes.json()
-        print(f"\n id: "
-              f"{dados_clientes['id']}")
-        print(f"\n nome: {dados_clientes['nome']}")
-        print(f"\n cpf: {dados_clientes['cpf']}")
-        print(f"\n telefone: {dados_clientes['telefone']}")
-        print(f"\n endereco: {dados_clientes['endereco']}")
-        return dados_clientes
-    else:
-        print(f"Erro: {response_get_clientes.status_code}")
+URL_BASE = "http://127.0.0.1:5000"
 
-consultar_cliente()
-def inserir_cliente():
-    url = "http://10.135.232.13:5000/criar_cliente"
-    novo_cliente = {
-        "nome": "",
-        "cpf": "",
-        "telefone": "",
-        "endereco": "", }
-    response = requests.post(url, json=novo_cliente)
-    if response.status_code == 201:
-        novo_cliente = response.json()
-        print(f"\n nome: {novo_cliente['nome']}")
-        print(f"\n cpf: {novo_cliente['cpf']}")
-    else:
-        print(f"Erro: {response.status_code}")
+def cadastro_usuario_app(nome, cpf, senha, telefone, endereco, papel='usuario'):
+    """
+    Cadastra um novo usuário para acesso ao sistema (pode ser 'admin' ou 'usuario').
+    Este endpoint é para criar usuários que utilizarão o app.
+    """
+    dados = {
+        "nome": nome,
+        "cpf": cpf,
+        "senha": senha,
+        "telefone": telefone,
+        "endereco": endereco,
+        "papel": papel
+    }
+    try:
+        resposta = requests.post(f"{URL_BASE}/cadastro", json=dados)
+        if resposta.status_code == 201:
+            return {"success": True, "message": resposta.json().get("msg", "Usuário cadastrado com sucesso!")}
+        else:
+            error_msg = resposta.json().get("msg", "Erro desconhecido ao cadastrar usuário.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao cadastrar usuário: {e}"}
 
 
-def atualizar_cliente(id):
-    url = f"http://10.135.232.13:5000/clientes/{id}"
-    novo_cliente = {
-        "id": id,
-        "nome": "",
-        "cpf": "",
-        "telefone": "",
-        "endereco": "",}
-    response_antes = requests.get(url)
-    response = requests.put(url, json=novo_cliente)
-    if response.status_code == 200:
-        if response_antes.status_code == 200:
-            dados_antes = response_antes.json()
-            print(f"\n nome antigo: {dados_antes['nome']}")
-            print(f"\n cpf antigo: {dados_antes['cpf']}")
-            print(f"\n telefone antigo: {dados_antes['telefone']}")
-            print(f"\n endereco antigo: {dados_antes['endereco']}")
-        dados_cliente = response.json()
-        print(f"\n nome: {dados_cliente['nome']}\n cpf: {dados_cliente['cpf']}"
-              f"\n telefone: {dados_cliente['telefone']} \n endereco: {dados_cliente['endereco']}")
-    else:
-        print(f"Erro: {response.status_code}")
+def post_cliente(nome, cpf, telefone, endereco):
+    """
+    Cadastra um novo cliente no sistema.
+    """
+    dados = {
+        "nome": nome,
+        "cpf": cpf,
+        "telefone": telefone,
+        "endereco": endereco
+    }
+    try:
+        resposta = requests.post(f"{URL_BASE}/cadastro_clientes", json=dados)
+        if resposta.status_code == 201:
+            return {"success": True, "data": resposta.json()}
+        else:
+            error_msg = resposta.json().get("erro", "Erro ao cadastrar cliente.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao cadastrar cliente: {e}"}
 
+def get_clientes():
+    """
+    Obtém a lista de todos os clientes cadastrados.
+    """
+    try:
+        resposta = requests.get(f"{URL_BASE}/lista_clientes")
+        if resposta.status_code == 200:
+            return {"success": True, "data": resposta.json().get("lista", [])}
+        else:
+            error_msg = resposta.json().get("error", "Erro ao obter clientes.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao obter clientes: {e}"}
 
-def consultar_veiculo():
-    url = "http://10.135.232.13:5000/veiculos"
-    response_get_veiculos = requests.get(url)
-    if response_get_veiculos.status_code == 200:
-        dados_veiculos = response_get_veiculos.json()
-        print(f"\n id: {dados_veiculos['id']}")
-        print(f"\n marca: {dados_veiculos['marca']}")
-        print(f"\n modelo: {dados_veiculos['modelo']}")
-        print(f"\n placa: {dados_veiculos['placa']}")
-        print(f"\n ano_fabricacao: {dados_veiculos['ano_fabricacao']}")
-    else:
-        print(f"Erro: {response_get_veiculos.status_code}")
+def atualizar_cliente(id_cliente, nome, cpf, telefone, endereco):
+    """
+    Atualiza os dados de um cliente existente.
+    """
+    dados = {
+        "nome": nome,
+        "cpf": cpf,
+        "telefone": telefone,
+        "endereco": endereco
+    }
+    try:
+        resposta = requests.put(f"{URL_BASE}/atualizar_clientes/{id_cliente}", json=dados)
+        if resposta.status_code == 200:
+            return {"success": True, "message": resposta.json().get("mensagem", "Cliente atualizado com sucesso!")}
+        else:
+            error_msg = resposta.json().get("error", "Erro ao atualizar cliente.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao atualizar cliente: {e}"}
 
-
-def inserir_veiculo(id_cliente,marca, modelo, placa,ano_fabriacao):
-    url = "http://10.135.232.13:5000/cadastro_veiculo"
-    novo_veiculo = {
-        "id_cliente": id_cliente,
+# --- Funções de Veículos ---
+def post_veiculo(marca, modelo, placa, ano_de_fabricacao, id_cliente):
+    """
+    Cadastra um novo veículo, associando-o a um cliente existente.
+    """
+    dados = {
         "marca": marca,
         "modelo": modelo,
         "placa": placa,
-        "ano_fabricacao": ano_fabriacao}
-    response = requests.post(url, json=novo_veiculo)
-    if response.status_code == 201:
-        novo_veiculo = response.json()
-        print(f"\n marca: {novo_veiculo['marca']}")
-        print(f"\n modelo: {novo_veiculo['modelo']}")
-        print(f"\n placa: {novo_veiculo['placa']}")
-        print(f"\n ano_fabricacao: {novo_veiculo['ano_fabricacao']}")
-        return response.json()
-    else:
-        print(f"Erro: {response.status_code}")
-        return response.json()
-
-def atualizar_veiculo(id):
-    url = f"http://10.135.232.13:5000/veiculos/{id}"
-    novo_veiculo = {
-        "id": id,
-        "marca": "",
-        "modelo": "",
-        "placa": "",
-        "ano_fabricacao": "",
+        "ano_de_fabricacao": ano_de_fabricacao,
+        "id_cliente": id_cliente
     }
-    response_antes = requests.get(url)
-    response = requests.put(url, json=novo_veiculo)
+    try:
+        resposta = requests.post(f"{URL_BASE}/cadastro_veiculo", json=dados)
+        if resposta.status_code == 201:
+            return {"success": True, "data": resposta.json()}
+        else:
+            error_msg = resposta.json().get("erro", "Erro ao cadastrar veículo.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao cadastrar veículo: {e}"}
 
-    if response.status_code == 200:
-        if response_antes.status_code == 200:
-            dados_antes = response_antes.json()
-            print(f"\n marca antigo: {dados_antes['marca']}")
-            print(f"\n modelo antigo: {dados_antes['modelo']}")
-            print(f"\n placa antigo: {dados_antes['placa']}")
-            print(f"\n ano de fabricacao antigo: {dados_antes['ano_fabricacao']}")
-        dados_cliente = response.json()
-        print(f"\n marca: {dados_cliente['marca']}\n modelo: {dados_cliente['modelo']}"
-              f"\n placa: {dados_cliente['placa']} \n ano de fabricacao: {dados_cliente['ano_fabricacao']}")
-    else:
-        print(f"Erro: {response.status_code}")
+def get_veiculos():
+    """
+    Obtém a lista de todos os veículos cadastrados.
+    """
+    try:
+        resposta = requests.get(f"{URL_BASE}/lista_veiculos")
+        if resposta.status_code == 200:
+            return {"success": True, "data": resposta.json().get("lista", [])}
+        else:
+            error_msg = resposta.json().get("error", "Erro ao obter veículos.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao obter veículos: {e}"}
 
-
-def consultar_ordem():
-    url = "http://10.135.232.13:5000/ordens"
-    response_get_ordens = requests.get(url)
-    if response_get_ordens.status_code == 200:
-        dados_ordens = response_get_ordens.json()
-        print(f"\n id: {dados_ordens['id']}")
-        print(f"\n marca: {dados_ordens['marca']}")
-        print(f"\n modelo: {dados_ordens['modelo']}")
-        print(f"\n placa: {dados_ordens['placa']}")
-        print(f"\n ano_fabricacao: {dados_ordens['ano_fabricacao']}")
-    else:
-        print(f"Erro: {response_get_ordens.status_code}")
-
-
-def inserir_ordem():
-    url = "http://10.135.232.13:5000/ordens"
-
-    nova_ordem = {
-        "veiculo_id": "",
-        "data_abertura": "",
-        "descricao_servico": "",
-        "status": "",
-        "valor_estimado": ""
+def atualizar_veiculo(id_veiculo, marca, modelo, placa, ano_de_fabricacao):
+    """
+    Atualiza os dados de um veículo existente.
+    """
+    dados = {
+        "marca": marca,
+        "modelo": modelo,
+        "placa": placa,
+        "ano_de_fabricacao": ano_de_fabricacao
     }
+    try:
+        resposta = requests.put(f"{URL_BASE}/atualizar_veiculos/{id_veiculo}", json=dados)
+        if resposta.status_code == 200:
+            return {"success": True, "message": "Veículo atualizado com sucesso!", "data": resposta.json()}
+        else:
+            error_msg = resposta.json().get("error", "Erro ao atualizar veículo.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao atualizar veículo: {e}"}
 
-    response = requests.post(url, json=nova_ordem)
-
-    if response.status_code == 201:
-        nova_ordem = response.json()
-        print(f"\n veiculo_id: {nova_ordem['veiculo_id']}")
-        print(f"\n data_abertura: {nova_ordem['data_abertura']}")
-        print(f"\n descricao_servico: {nova_ordem['descricao_servico']}")
-        print(f"\n status: {nova_ordem['status']}")
-        print(f"\n valor_estimado: {nova_ordem['valor_estimado']}")
-    else:
-        print(f"Erro: {response.status_code}")
-
-    # exemplo_post()
-
-
-def atualizar_ordem(id):
-    url = f"http://10.135.232.13:5000/ordens/{id}"
-
-    nova_ordem = {
-        "id": id,
-        "veiculo_id": "",
-        "data_abertura": "",
-        "descricao_servico": "",
-        "status": "",
-        "valor_estimado": ""
+# --- Funções de Ordens de Serviço ---
+def post_ordem_servico(veiculos_associados, descricao_de_servico, data_de_abertura, status, valor_total):
+    """
+    Cadastra uma nova ordem de serviço.
+    'veiculos_associados' deve ser a placa do veículo, conforme o modelo da API.
+    A API parece esperar 'id_servicos' no payload para POST, o que é incomum para um ID auto-gerado.
+    Considerando que `id_servicos` é uma PK, não deveria ser enviado no POST.
+    Caso a API exija, adicione um 'id_servicos' gerado ou recebido como parâmetro.
+    Por enquanto, omiti no payload de criação.
+    """
+    dados = {
+        "veiculos_associados": veiculos_associados,
+        "descricao_de_servico": descricao_de_servico,
+        "data_de_abertura": data_de_abertura,
+        "status": status,
+        "valor_total": valor_total,
+        # 'id_servicos' não incluído, pois é geralmente auto-gerado pelo banco de dados.
+        # Se a API exige, descomente e forneça um valor.
+        # "id_servicos": id_servicos,
     }
-    response_antes = requests.get(url)
-    response = requests.put(url, json=nova_ordem)
+    try:
+        resposta = requests.post(f"{URL_BASE}/ordens_de_servicos", json=dados)
+        if resposta.status_code == 201:
+            return {"success": True, "data": resposta.json()}
+        else:
+            error_msg = resposta.json().get("erro", "Erro ao cadastrar ordem de serviço.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao cadastrar ordem de serviço: {e}"}
 
-    if response.status_code == 200:
-        if response_antes.status_code == 200:
-            dados_antes = response_antes.json()
-            print(f"\n id do veiculo antigo: {dados_antes['veiculo_id']}")
-            print(f"\n data da abertura antiga: {dados_antes['data_abertura']}")
-            print(f"\n descricao de servico antigo: {dados_antes['descricao_servico']}")
-            print(f"\n status: {dados_antes['status']}")
-            print(f"\n valor estimado antigo: {dados_antes['valor_estimado']}")
-        dados_cliente = response.json()
-        print(f"\n id do veiculo: {dados_cliente['veiculo_id']}\n data da abertura: {dados_cliente['data_abertura']}"
-              f"\n descricao de servico: {dados_cliente['descricao_servico']} \n status: {dados_cliente['status']} \n "
-              f"valor estimado: {dados_cliente['valor_estimado']}")
-    else:
-        print(f"Erro: {response.status_code}")
+def get_ordens_servico():
+    """
+    Obtém a lista de todas as ordens de serviço.
+    """
+    try:
+        resposta = requests.get(f"{URL_BASE}/lista_servicos")
+        if resposta.status_code == 200:
+            return {"success": True, "data": resposta.json().get("lista", [])}
+        else:
+            error_msg = resposta.json().get("error", "Erro ao obter ordens de serviço.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao obter ordens de serviço: {e}"}
 
-
+def atualizar_ordem_servico(id_servicos, veiculos_associados, descricao_de_servico, data_de_abertura, status, valor_total):
+    """
+    Atualiza os dados de uma ordem de serviço existente.
+    """
+    dados = {
+        "veiculos_associados": veiculos_associados,
+        "descricao_de_servico": descricao_de_servico,
+        "data_de_abertura": data_de_abertura,
+        "status": status,
+        "valor_total": valor_total
+    }
+    try:
+        resposta = requests.put(f"{URL_BASE}/atualizar_Ordens/{id_servicos}", json=dados)
+        if resposta.status_code == 200:
+            return {"success": True, "message": "Ordem de serviço atualizada com sucesso!", "data": resposta.json()}
+        else:
+            error_msg = resposta.json().get("error", "Erro ao atualizar ordem de serviço.")
+            return {"success": False, "message": error_msg}
+    except requests.exceptions.ConnectionError:
+        return {"success": False, "message": "Erro de conexão com a API. Verifique se a API está rodando."}
+    except json.JSONDecodeError:
+        return {"success": False, "message": "Resposta inválida da API (não é JSON)."}
+    except Exception as e:
+        return {"success": False, "message": f"Erro inesperado ao atualizar ordem de serviço: {e}"}
