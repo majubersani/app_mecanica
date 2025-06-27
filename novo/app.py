@@ -1,186 +1,645 @@
 import flet as ft
-from flet import AppBar, Text, View
+from flet import (
+    AppBar, Text, View, ElevatedButton, TextField, ListView,
+    ListTile, Icon, PopupMenuButton, PopupMenuItem, Image, Dropdown, SnackBar
+)
 from flet.core.colors import Colors
-
-from novo.funcoes_api import inserir_veiculo, inserir_ordem
+from flet.core.dropdown import Option
+from flet.core.types import CrossAxisAlignment
+import flet as api_funcoes  # Importa suas funções da API
 
 
 def main(page: ft.Page):
-    page.title = "Cadastro"
-    page.theme_mode = ft.ThemeMode.LIGHT
-    page.window_width = 375
-    page.window_height = 667
+    # Configurações iniciais da página
+    page.title = "Sistema de Mecânica Automotiva"
+    page.theme_mode = ft.ThemeMode.DARK
+    page.window.width = 375
+    page.window.height = 667
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
-    clientes, veiculos, ordens = [], [], []
+    # Variáveis para controle de edição
+    editar_cliente_id = None
+    editar_veiculo_id = None
+    editar_ordem_servico_id = None
 
-    def input_field(label):
-        return ft.TextField(
-            label=label,
-            border_radius=10,
-            filled=True,
-            fill_color=Colors.RED_100,
-            border_color=Colors.RED_300
-        )
-
-#configurar
-    mensagem_erro = ft.SnackBar(
-        content=ft.Text(value="Os campos estão vazio"),
-        bgcolor=Colors.RED,
-        duration=2000,
-    )
-    input_nome = input_field("Nome:")
-    input_cpf = input_field("CPF:")
-    input_telefone = input_field("Telefone:")
-    input_endereco = input_field("Endereço:")
-
-    input_id_cliente = ft.TextField(label="id Cliente:")
-
-    input_marca = input_field("Marca:")
-    input_modelo = input_field("Modelo:")
-    input_placa = input_field("Placa:")
-    input_ano_fabricacao = input_field("Ano de fabricação:")
-
-    input_data_abertura = input_field("Data da abertura:")
-    input_descricao_servico = input_field("Descrição do serviço:")
-    input_status = input_field("Status:")
-    input_valor_estimado = input_field("Valor estimado:")
-
-    def cadastrar_cliente(e): page.go("/cliente")
-    def cadastrar_veiculo(e): page.go("/veiculo")
-    def cadastrar_ordem(e): page.go("/ordem")
-    def ver_cadastrados(e): page.go("/cadastrados")
-    def voltar(e): page.go("/")
-
-    def salvar_cliente(e):
-        if input_nome.value and input_cpf.value and input_telefone.value and input_endereco.value:
-            clientes.append({
-                "nome": input_nome.value,
-                "cpf": input_cpf.value,
-                "telefone": input_telefone.value,
-                "endereco": input_endereco.value
-            })
-            input_nome.value = input_cpf.value = input_telefone.value = input_endereco.value = ""
-            page.go("/cadastrados")
-
-    def salvar_veiculo(e):
-        if input_marca.value == '' or input_modelo.value == '' or input_placa.value == '' or input_ano_fabricacao.value == '':
-            page.overlay.append(mensagem_erro)
-            mensagem_erro.open=True
-            return page.update()
-        dados = inserir_veiculo(input_id_cliente.value,input_marca.value,input_modelo,input_placa.value,input_ano_fabricacao.value)
-        if 'error' in dados:
-            # abu = ft.Text(dados['error'])
-            # snack_bar = ft.SnackBar(content=abu, bgcolor=Colors.RED, duration=2000)
-            # page.overlay.append(snack_bar)
-            # snack_bar.open=True
-            # return page.update()
-            print('error')
+    # --- Funções de Carregamento para Dropdowns ---
+    def carregar_clientes_dropdown(dd_cliente_veiculo=None):
+        """Carrega a lista de clientes para o Dropdown de associação de veículos."""
+        clientes_response = api_funcoes.get_clientes()
+        if clientes_response["success"]:
+            clientes_data = clientes_response["data"]
+            options = []
+            for cliente in clientes_data:
+                options.append(Option(
+                    key=str(cliente['id']),
+                    text=f"{cliente['nome']} (CPF: {cliente['cpf']})"
+                ))
+            dd_cliente_veiculo.options = options
+            page.update()
         else:
-            page.go("/")
-        # if input_marca.value and input_modelo.value and input_placa.value and input_ano_fabricacao.value:
-        #     veiculos.append({
-        #         "marca": input_marca.value,
-        #         "modelo": input_modelo.value,
-        #         "placa": input_placa.value,
-        #         "ano_fabricacao": input_ano_fabricacao.value
-        #     })
-        #     input_marca.value = input_modelo.value = input_placa.value = input_ano_fabricacao.value = ""
-        #     page.go("/cadastrados")
+            mostrar_mensagem(clientes_response["message"], success=False)
 
-    def salvar_ordem(e):
-        if input_data_abertura == '' or input_descricao_servico == '' or input_status == '' or input_valor_estimado.value == '':
-            page.overlay.append(mensagem_erro)
-            mensagem_erro.open=True
-            return page.update()
-        dados = inserir_veiculo(input_id_cliente.value,input_marca.value,input_modelo,input_placa.value,input_ano_fabricacao.value)
-        if 'error' in dados:
-            abu = ft.Text(dados['error'])
-            snack_bar = ft.SnackBar(content=abu, bgcolor=Colors.RED, duration=2000)
-            page.overlay.append(snack_bar)
-            snack_bar.open=True
-            return page.update()
+    def carregar_veiculos_dropdown(dd_veiculo_ordem=None):
+        """Carrega a lista de veículos para o Dropdown de associação de ordens de serviço."""
+        veiculos_response = api_funcoes.get_veiculos()
+        if veiculos_response["success"]:
+            veiculos_data = veiculos_response["data"]
+            options = []
+            for veiculo in veiculos_data:
+                options.append(Option(
+                    key=veiculo['placa'],  # Usando a placa como chave para ordens de serviço
+                    text=f"{veiculo['modelo']} ({veiculo['placa']})"
+                ))
+            dd_veiculo_ordem.options = options
+            page.update()
         else:
-            page.go("/")
-        # if input_data_abertura.value and input_descricao_servico.value and input_status.value and input_valor_estimado.value:
-        #     ordens.append({
-        #         "data_abertura": input_data_abertura.value,
-        #         "descricao_servico": input_descricao_servico.value,
-        #         "status": input_status.value,
-        #         "valor_estimado": input_valor_estimado.value
-        #     })
-        #     input_data_abertura.value = input_descricao_servico.value = input_status.value = input_valor_estimado.value = ""
-        #     page.go("/cadastrados")
+            mostrar_mensagem(veiculos_response["message"], success=False)
 
-    def main_view():
-        return ft.Column(
-            controls=[
-                ft.Image(src="Logos_app_py.png", width=350),
-                ft.ElevatedButton("Cadastrar Cliente", on_click=cadastrar_cliente, bgcolor=Colors.RED_700, color=Colors.WHITE),
-                ft.ElevatedButton("Cadastrar Veículo", on_click=cadastrar_veiculo, bgcolor=Colors.RED_700, color=Colors.WHITE),
-                ft.ElevatedButton("Cadastrar Ordem de Serviço", on_click=cadastrar_ordem, bgcolor=Colors.RED_700, color=Colors.WHITE),
-                ft.ElevatedButton("Ver Cadastrados", on_click=ver_cadastrados, bgcolor=Colors.WHITE, color=Colors.RED_700),
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=10,
-        )
-
-    def form_view(title, inputs, on_save):
-        return ft.View(
-            f"/{title.lower()}",
-            controls=[
-                *[ft.Container(content=i, padding=5) for i in inputs],
-                ft.Container(ft.ElevatedButton("Salvar", on_click=on_save, expand=True), padding=5),
-                ft.Container(ft.ElevatedButton("Voltar", on_click=voltar, expand=True), padding=5),
-            ],
-            appbar=AppBar(title=Text(f"Cadastrar {title}"), bgcolor=Colors.RED_800),
-            bgcolor=Colors.RED_100
-        )
-
-    def cliente_view():
-        return form_view("Cliente", [input_nome, input_cpf, input_telefone, input_endereco], salvar_cliente)
-
-    def veiculo_view():
-        return form_view("Veículo", [input_marca, input_modelo, input_placa, input_ano_fabricacao], salvar_veiculo)
-
-    def ordem_view():
-        return form_view("Ordem de Serviço", [input_data_abertura, input_descricao_servico, input_status, input_valor_estimado], salvar_ordem)
-
-    def cadastrados_view():
-        return ft.View(
-            "/cadastrados",
-            controls=[
-                *[ft.Text(f"{c['nome']} | {c['cpf']} | {c['telefone']} | {c['endereco']}") for c in clientes],
-                ft.Divider(),
-                *[ft.Text(f"{v['marca']} {v['modelo']} | {v['placa']} | {v['ano_fabricacao']}") for v in veiculos],
-                ft.Divider(),
-                *[ft.Text(f"{o['data_abertura']} | {o['descricao_servico']} | {o['status']} | R$ {o['valor_estimado']}") for o in ordens],
-                   ft.ElevatedButton("Voltar", on_click=voltar, color=Colors.RED_800),
-            ],
-            appbar=AppBar(title=Text("Cadastrados"), bgcolor=Colors.RED_800),
-            bgcolor=Colors.RED_100
-        )
-
-    def gerencia_rotas(route):
-        page.views.clear()
-        if page.route == "/":
-            page.views.append(
-                View("/",
-                     [
-                    main_view()
-                ]
-                     , bgcolor=Colors.RED_100))
-        elif page.route == "/cliente":
-            page.views.append(cliente_view())
-        elif page.route == "/veiculo":
-            page.views.append(veiculo_view())
-        elif page.route == "/ordem":
-            page.views.append(ordem_view())
-        elif page.route == "/cadastrados":
-            page.views.append(cadastrados_view())
+    # --- Funções de Salvar (Cadastro) ---
+    def salvar_cliente(e, nome_cliente=None, cpf_cliente=None, telefone_cliente=None, endereco_cliente=None):
+        """Salva um novo cliente."""
+        if nome_cliente.value.strip() and cpf_cliente.value.strip() and telefone_cliente.value.strip() and endereco_cliente.value.strip():
+            response = api_funcoes.post_cliente(
+                nome_cliente.value.strip(),
+                cpf_cliente.value.strip(),
+                telefone_cliente.value.strip(),
+                endereco_cliente.value.strip()
+            )
+            if response["success"]:
+                nome_cliente.value = cpf_cliente.value = telefone_cliente.value = endereco_cliente.value = ""
+                mostrar_mensagem("Cliente cadastrado com sucesso!", success=True)
+                page.go("/lista_clientes")
+            else:
+                mostrar_mensagem(response["message"], success=False)
+        else:
+            mostrar_mensagem("Preencha todos os campos!", success=False)
         page.update()
 
-    page.on_route_change = gerencia_rotas
-    page.go("/")
+    def salvar_veiculo(e, dd_cliente_veiculo=None, modelo_veiculo=None, ano_veiculo=None, placa_veiculo=None,
+                       marca_veiculo=None):
+        """Salva um novo veículo."""
+        selected_cliente_id = dd_cliente_veiculo.value
+        if (marca_veiculo.value.strip() and modelo_veiculo.value.strip() and
+                placa_veiculo.value.strip() and ano_veiculo.value.strip() and
+                selected_cliente_id):
 
-ft.app(target=main)
+            try:
+                ano = int(ano_veiculo.value.strip())
+                cliente_id = int(selected_cliente_id)
+            except ValueError:
+                mostrar_mensagem("Ano e ID do Cliente devem ser números válidos!", success=False)
+                return
+
+            response = api_funcoes.post_veiculo(
+                marca_veiculo.value.strip(),
+                modelo_veiculo.value.strip(),
+                placa_veiculo.value.strip(),
+                ano,
+                cliente_id
+            )
+            if response["success"]:
+                marca_veiculo.value = modelo_veiculo.value = placa_veiculo.value = ano_veiculo.value = ""
+                dd_cliente_veiculo.value = None
+                mostrar_mensagem("Veículo cadastrado com sucesso!", success=True)
+                page.go("/lista_veiculos")
+            else:
+                mostrar_mensagem(response["message"], success=False)
+        else:
+            mostrar_mensagem("Preencha todos os campos e selecione um cliente!", success=False)
+        page.update()
+
+    def salvar_ordem_servico(e, dd_veiculo_ordem=None, valor_total_os=None, data_abertura_os=None, status_os=None,
+                             descricao_os=None):
+        """Salva uma nova ordem de serviço."""
+        selected_veiculo_placa = dd_veiculo_ordem.value
+        if (descricao_os.value.strip() and data_abertura_os.value.strip() and
+                status_os.value.strip() and valor_total_os.value.strip() and
+                selected_veiculo_placa):
+
+            try:
+                valor_total = float(valor_total_os.value.strip())
+            except ValueError:
+                mostrar_mensagem("Valor Total deve ser um número válido!", success=False)
+                return
+
+            response = api_funcoes.post_ordem_servico(
+                selected_veiculo_placa,
+                descricao_os.value.strip(),
+                data_abertura_os.value.strip(),
+                status_os.value.strip(),
+                valor_total
+            )
+            if response["success"]:
+                descricao_os.value = data_abertura_os.value = status_os.value = valor_total_os.value = ""
+                dd_veiculo_ordem.value = None
+                mostrar_mensagem("Ordem de Serviço cadastrada com sucesso!", success=True)
+                page.go("/lista_ordens_servico")
+            else:
+                mostrar_mensagem(response["message"], success=False)
+        else:
+            mostrar_mensagem("Preencha todos os campos e selecione um veículo!", success=False)
+        page.update()
+
+    # --- Funções de Salvar (Edição) ---
+    def salvar_editar_cliente(e, edit_endereco_cliente=None, edit_telefone_cliente=None, edit_cpf_cliente=None,
+                              edit_nome_cliente=None):
+        """Salva as alterações de um cliente."""
+        nonlocal editar_cliente_id
+        if editar_cliente_id is None:
+            mostrar_mensagem("Nenhum cliente selecionado para editar.", success=False)
+            return
+
+        if (edit_nome_cliente.value.strip() and edit_cpf_cliente.value.strip() and
+                edit_telefone_cliente.value.strip() and edit_endereco_cliente.value.strip()):
+
+            response = api_funcoes.atualizar_cliente(
+                editar_cliente_id,
+                edit_nome_cliente.value.strip(),
+                edit_cpf_cliente.value.strip(),
+                edit_telefone_cliente.value.strip(),
+                edit_endereco_cliente.value.strip()
+            )
+            if response["success"]:
+                mostrar_mensagem("Cliente atualizado com sucesso!", success=True)
+                editar_cliente_id = None
+                page.go("/lista_clientes")
+            else:
+                mostrar_mensagem(response["message"], success=False)
+        else:
+            mostrar_mensagem("Preencha todos os campos!", success=False)
+        page.update()
+
+    def salvar_editar_veiculo(e, edit_marca_veiculo=None, edit_modelo_veiculo=None, edit_ano_veiculo=None,
+                              edit_placa_veiculo=None):
+        """Salva as alterações de um veículo."""
+        nonlocal editar_veiculo_id
+        if editar_veiculo_id is None:
+            mostrar_mensagem("Nenhum veículo selecionado para editar.", success=False)
+            return
+
+        if (edit_marca_veiculo.value.strip() and edit_modelo_veiculo.value.strip() and
+                edit_placa_veiculo.value.strip() and edit_ano_veiculo.value.strip()):
+
+            try:
+                ano = int(edit_ano_veiculo.value.strip())
+            except ValueError:
+                mostrar_mensagem("Ano deve ser um número válido!", success=False)
+                return
+
+            response = api_funcoes.atualizar_veiculo(
+                editar_veiculo_id,
+                edit_marca_veiculo.value.strip(),
+                edit_modelo_veiculo.value.strip(),
+                edit_placa_veiculo.value.strip(),
+                ano
+            )
+            if response["success"]:
+                mostrar_mensagem("Veículo atualizado com sucesso!", success=True)
+                editar_veiculo_id = None
+                page.go("/lista_veiculos")
+            else:
+                mostrar_mensagem(response["message"], success=False)
+        else:
+            mostrar_mensagem("Preencha todos os campos!", success=False)
+        page.update()
+
+    def salvar_editar_ordem_servico(e, edit_status_os=None, edit_descricao_os=None, edit_data_abertura_os=None,
+                                    edit_veiculos_associados_os=None, edit_valor_total_os=None):
+        """Salva as alterações de uma ordem de serviço."""
+        nonlocal editar_ordem_servico_id
+        if editar_ordem_servico_id is None:
+            mostrar_mensagem("Nenhuma Ordem de Serviço selecionada para editar.", success=False)
+            return
+
+        if (edit_veiculos_associados_os.value.strip() and edit_descricao_os.value.strip() and
+                edit_data_abertura_os.value.strip() and edit_status_os.value.strip() and
+                edit_valor_total_os.value.strip()):
+
+            try:
+                valor_total = float(edit_valor_total_os.value.strip())
+            except ValueError:
+                mostrar_mensagem("Valor Total deve ser um número válido!", success=False)
+                return
+
+            response = api_funcoes.atualizar_ordem_servico(
+                editar_ordem_servico_id,
+                edit_veiculos_associados_os.value.strip(),
+                edit_descricao_os.value.strip(),
+                edit_data_abertura_os.value.strip(),
+                edit_status_os.value.strip(),
+                valor_total
+            )
+            if response["success"]:
+                mostrar_mensagem("Ordem de Serviço atualizada com sucesso!", success=True)
+                editar_ordem_servico_id = None
+                page.go("/lista_ordens_servico")
+            else:
+                mostrar_mensagem(response["message"], success=False)
+        else:
+            mostrar_mensagem("Preencha todos os campos!", success=False)
+        page.update()
+
+    # --- Funções de Exibição de Listas ---
+    def exibir_lista_clientes(e, lv_clientes=None):
+        """Exibe a lista de clientes."""
+        lv_clientes.controls.clear()
+        response = api_funcoes.get_clientes()
+        if response["success"]:
+            clientes = response["data"]
+            if not clientes:
+                lv_clientes.controls.append(Text("Nenhum cliente encontrado."))
+            else:
+                for c in clientes:
+                    lv_clientes.controls.append(
+                        ListTile(
+                            leading=Icon(ft.Icons.PERSON),
+                            title=Text(c["nome"]),
+                            subtitle=Text(f"CPF: {c.get('cpf', '')} | Tel: {c.get('telefone', '')}"),
+                            trailing=PopupMenuButton(
+                                items=[
+                                    PopupMenuItem(text="Detalhes",
+                                                  on_click=lambda _, cliente=c: ver_detalhes_cliente(cliente)),
+                                    PopupMenuItem(text="Editar",
+                                                  on_click=lambda _, cliente=c: iniciar_edicao_cliente(cliente)),
+                                ]
+                            )
+                        )
+                    )
+        else:
+            lv_clientes.controls.append(Text(f"Erro ao carregar clientes: {response['message']}"))
+        page.update()
+
+    def exibir_lista_veiculos(e, lv_veiculos=None):
+        """Exibe a lista de veículos."""
+        lv_veiculos.controls.clear()
+        response = api_funcoes.get_veiculos()
+        if response["success"]:
+            veiculos = response["data"]
+            if not veiculos:
+                lv_veiculos.controls.append(Text("Nenhum veículo encontrado."))
+            else:
+                for v in veiculos:
+                    lv_veiculos.controls.append(
+                        ListTile(
+                            leading=Icon(ft.Icons.DIRECTIONS_CAR),
+                            title=Text(f"{v['marca']} {v['modelo']}"),
+                            subtitle=Text(
+                                f"Placa: {v['placa']} | Ano: {v['ano_de_fabricacao']} | Cliente ID: {v['id_cliente']}"),
+                            trailing=PopupMenuButton(
+                                items=[
+                                    PopupMenuItem(text="Detalhes",
+                                                  on_click=lambda _, veiculo=v: ver_detalhes_veiculo(veiculo)),
+                                    PopupMenuItem(text="Editar",
+                                                  on_click=lambda _, veiculo=v: iniciar_edicao_veiculo(veiculo)),
+                                ]
+                            )
+                        )
+                    )
+        else:
+            lv_veiculos.controls.append(Text(f"Erro ao carregar veículos: {response['message']}"))
+        page.update()
+
+    def exibir_lista_ordens_servico(e, lv_ordens_servico=None):
+        """Exibe a lista de ordens de serviço."""
+        lv_ordens_servico.controls.clear()
+        response = api_funcoes.get_ordens_servico()
+        if response["success"]:
+            ordens = response["data"]
+            if not ordens:
+                lv_ordens_servico.controls.append(Text("Nenhuma Ordem de Serviço encontrada."))
+            else:
+                for os in ordens:
+                    lv_ordens_servico.controls.append(
+                        ListTile(
+                            leading=Icon(ft.Icons.RECEIPT_LONG),
+                            title=Text(f"OS ID: {os.get('id_servicos', '')}"),
+                            subtitle=Text(
+                                f"Veículo: {os.get('veiculos_associados', '')} | Descrição: {os.get('descricao_de_servico', '')}\n"
+                                f"Data: {os.get('data_de_abertura', '')} | Status: {os.get('status', '')} | Valor: R$ {os.get('valor_total', ''):.2f}"
+                            ),
+                            trailing=PopupMenuButton(
+                                items=[
+                                    PopupMenuItem(text="Detalhes",
+                                                  on_click=lambda _, ordem=os: ver_detalhes_ordem_servico(ordem)),
+                                    PopupMenuItem(text="Editar",
+                                                  on_click=lambda _, ordem=os: iniciar_edicao_ordem_servico(ordem)),
+                                ]
+                            )
+                        )
+                    )
+        else:
+            lv_ordens_servico.controls.append(Text(f"Erro ao carregar Ordens de Serviço: {response['message']}"))
+        page.update()
+
+    # --- Funções de Iniciar Edição ---
+    def iniciar_edicao_cliente(cliente, edit_endereco_cliente=None, edit_telefone_cliente=None, edit_cpf_cliente=None,
+                               edit_nome_cliente=None):
+        """Preenche os campos de edição com os dados do cliente selecionado."""
+        nonlocal editar_cliente_id
+        editar_cliente_id = cliente.get("id")
+        edit_nome_cliente.value = cliente["nome"]
+        edit_cpf_cliente.value = cliente.get("cpf", "")
+        edit_telefone_cliente.value = cliente.get("telefone", "")
+        edit_endereco_cliente.value = cliente["endereco"]
+        page.go("/editar_cliente")
+        page.update()
+
+    def iniciar_edicao_veiculo(veiculo, edit_ano_veiculo=None, edit_placa_veiculo=None, edit_marca_veiculo=None,
+                               edit_modelo_veiculo=None):
+        """Preenche os campos de edição com os dados do veículo selecionado."""
+        nonlocal editar_veiculo_id
+        editar_veiculo_id = veiculo.get("id")
+        edit_marca_veiculo.value = veiculo["marca"]
+        edit_modelo_veiculo.value = veiculo["modelo"]
+        edit_placa_veiculo.value = veiculo["placa"]
+        edit_ano_veiculo.value = str(veiculo.get("ano_de_fabricacao", ""))
+        page.go("/editar_veiculo")
+        page.update()
+
+    def iniciar_edicao_ordem_servico(ordem, edit_veiculos_associados_os=None, edit_descricao_os=None,
+                                     edit_data_abertura_os=None, edit_status_os=None, edit_valor_total_os=None):
+        """Preenche os campos de edição com os dados da ordem de serviço selecionada."""
+        nonlocal editar_ordem_servico_id
+        editar_ordem_servico_id = ordem.get("id_servicos")
+        edit_veiculos_associados_os.value = ordem.get("veiculos_associados", "")
+        edit_descricao_os.value = ordem["descricao_de_servico"]
+        edit_data_abertura_os.value = ordem["data_de_abertura"]
+        edit_status_os.value = ordem["status"]
+        edit_valor_total_os.value = str(ordem.get("valor_total", ""))
+        page.go("/editar_ordem_servico")
+        page.update()
+
+    # --- Funções de Ver Detalhes ---
+    def ver_detalhes_cliente(cliente, txt_detalhes=None):
+        """Exibe os detalhes de um cliente."""
+        txt_detalhes.value = (
+            f"ID: {cliente.get('id', '')}\n"
+            f"Nome: {cliente.get('nome', '')}\n"
+            f"CPF: {cliente.get('cpf', '')}\n"
+            f"Telefone: {cliente.get('telefone', '')}\n"
+            f"Endereço: {cliente.get('endereco', '')}"
+        )
+        page.go("/detalhes_cliente")
+        page.update()
+
+    def ver_detalhes_veiculo(veiculo, txt_detalhes=None):
+        """Exibe os detalhes de um veículo."""
+        txt_detalhes.value = (
+            f"ID: {veiculo.get('id', '')}\n"
+            f"Marca: {veiculo.get('marca', '')}\n"
+            f"Modelo: {veiculo.get('modelo', '')}\n"
+            f"Placa: {veiculo.get('placa', '')}\n"
+            f"Ano de Fabricação: {veiculo.get('ano_de_fabricacao', '')}\n"
+            f"ID do Cliente: {veiculo.get('id_cliente', '')}"
+        )
+        page.go("/detalhes_veiculo")
+        page.update()
+
+    def ver_detalhes_ordem_servico(ordem, txt_detalhes=None):
+        """Exibe os detalhes de uma ordem de serviço."""
+        txt_detalhes.value = (
+            f"ID do Serviço: {ordem.get('id_servicos', '')}\n"
+            f"Veículo Associado (Placa): {ordem.get('veiculos_associados', '')}\n"
+            f"Descrição do Serviço: {ordem.get('descricao_de_servico', '')}\n"
+            f"Data de Abertura: {ordem.get('data_de_abertura', '')}\n"
+            f"Status: {ordem.get('status', '')}\n"
+            f"Valor Total: R$ {ordem.get('valor_total', 0.0):.2f}"
+        )
+        page.go("/detalhes_ordem_servico")
+        page.update()
+
+    # Função para mostrar mensagens (sucesso/erro)
+    def mostrar_mensagem(message, success=True, msg_bar=None):
+        """Exibe um SnackBar com a mensagem fornecida."""
+        msg_bar.content = Text(message)
+        msg_bar.bgcolor = Colors.GREEN_700 if success else Colors.RED_700
+        msg_bar.open = True
+        page.update()
+
+    # --- Gerenciamento de Rotas ---
+    def gerencia_rota(e, txt_detalhes=None, cpf_cliente=None, telefone_cliente=None, endereco_cliente=None,
+                      nome_cliente=None, edit_endereco_cliente=None, lv_clientes=None, edit_cpf_cliente=None,
+                      edit_telefone_cliente=None, edit_nome_cliente=None, marca_veiculo=None, modelo_veiculo=None,
+                      placa_veiculo=None, ano_veiculo=None, dd_cliente_veiculo=None, lv_veiculos=None,
+                      edit_marca_veiculo=None, edit_modelo_veiculo=None):
+        """Gerencia as visualizações da aplicação com base na rota."""
+        page.views.clear()
+
+        # Visão Principal (Menu Inicial)
+        page.views.append(
+            View(
+                "/",
+                [
+                    Image(src="https://placehold.co/150x150/000000/FFFFFF?text=Mecânica"),
+                    ElevatedButton("Clientes", on_click=lambda _: page.go("/clientes"), width=200,
+                                   color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ElevatedButton("Veículos", on_click=lambda _: page.go("/veiculos"), width=200,
+                                   color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ElevatedButton("Ordens de Serviço", on_click=lambda _: page.go("/ordens_servico"), width=200,
+                                   color=ft.CupertinoColors.SYSTEM_PURPLE),
+                ],
+                bgcolor=Colors.PURPLE_900,
+                horizontal_alignment=CrossAxisAlignment.CENTER,
+                padding=ft.padding.all(20)
+            )
+        )
+
+        # Rotas de Clientes
+        if page.route == "/clientes":
+            page.views.append(
+                View(
+                    "/clientes",
+                    [
+                        Image(src="https://placehold.co/100x100/000000/FFFFFF?text=Clientes"),
+                        AppBar(title=Text("Clientes"), bgcolor=Colors.YELLOW_700),
+                        ElevatedButton("Cadastrar Cliente", on_click=lambda _: page.go("/cadastro_cliente"),
+                                       width=250, color=ft.CupertinoColors.SYSTEM_PURPLE),
+                        ElevatedButton("Visualizar Clientes", on_click=lambda _: page.go("/lista_clientes"),
+                                       width=250, color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20)
+                )
+            )
+        elif page.route == "/cadastro_cliente":
+            page.views.append(
+                View(
+                    "/cadastro_cliente",
+                    [
+                        AppBar(title=Text("Cadastro de Cliente"), bgcolor=Colors.YELLOW_700),
+                        nome_cliente,
+                        cpf_cliente,
+                        telefone_cliente,
+                        endereco_cliente,
+                        ElevatedButton("Salvar Cliente", on_click=salvar_cliente, width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                        ElevatedButton("Voltar ao Menu Clientes", on_click=lambda _: page.go("/clientes"), width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20),
+                    scroll="auto"
+                )
+            )
+        elif page.route == "/lista_clientes":
+            page.views.append(
+                View(
+                    "/lista_clientes",
+                    [
+                        AppBar(title=Text("Lista de Clientes"), bgcolor=Colors.YELLOW_700),
+                        lv_clientes,
+                        ElevatedButton("Voltar ao Menu Clientes", on_click=lambda _: page.go("/clientes"), width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20)
+                )
+            )
+            exibir_lista_clientes(None)  # Carrega a lista ao entrar na rota
+        elif page.route == "/editar_cliente":
+            page.views.append(
+                View(
+                    "/editar_cliente",
+                    [
+                        AppBar(title=Text("Editar Cliente"), bgcolor=Colors.YELLOW_700),
+                        edit_nome_cliente,
+                        edit_cpf_cliente,
+                        edit_telefone_cliente,
+                        edit_endereco_cliente,
+                        ElevatedButton("Salvar Alterações", on_click=salvar_editar_cliente, width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                        ElevatedButton("Voltar à Lista", on_click=lambda _: page.go("/lista_clientes"), width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20),
+                    scroll="auto"
+                )
+            )
+        elif page.route == "/detalhes_cliente":
+            page.views.append(
+                View(
+                    "/detalhes_cliente",
+                    [
+                        AppBar(title=Text("Detalhes do Cliente"), bgcolor=Colors.YELLOW_700),
+                        txt_detalhes,
+                        ElevatedButton("Voltar à Lista", on_click=lambda _: page.go("/lista_clientes"), width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20)
+                )
+            )
+
+        # Rotas de Veículos
+        elif page.route == "/veiculos":
+            page.views.append(
+                View(
+                    "/veiculos",
+                    [
+                        Image(src="https://placehold.co/100x100/000000/FFFFFF?text=Veículos"),
+                        AppBar(title=Text("Veículos"), bgcolor=Colors.YELLOW_700),
+                        ElevatedButton("Cadastrar Veículo", on_click=lambda _: page.go("/cadastro_veiculo"),
+                                       width=250, color=ft.CupertinoColors.SYSTEM_PURPLE),
+                        ElevatedButton("Visualizar Veículos", on_click=lambda _: page.go("/lista_veiculos"),
+                                       width=250, color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20)
+                )
+            )
+        elif page.route == "/cadastro_veiculo":
+            carregar_clientes_dropdown()  # Carrega clientes para o dropdown
+            page.views.append(
+                View(
+                    "/cadastro_veiculo",
+                    [
+                        AppBar(title=Text("Cadastro de Veículo"), bgcolor=Colors.YELLOW_700),
+                        marca_veiculo,
+                        modelo_veiculo,
+                        placa_veiculo,
+                        ano_veiculo,
+                        dd_cliente_veiculo,  # Dropdown para seleção de cliente
+                        ElevatedButton("Salvar Veículo", on_click=salvar_veiculo, width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                        ElevatedButton("Voltar ao Menu Veículos", on_click=lambda _: page.go("/veiculos"), width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20),
+                    scroll="auto"
+                )
+            )
+        elif page.route == "/lista_veiculos":
+            page.views.append(
+                View(
+                    "/lista_veiculos",
+                    [
+                        AppBar(title=Text("Lista de Veículos"), bgcolor=Colors.YELLOW_700),
+                        lv_veiculos,
+                        ElevatedButton("Voltar ao Menu Veículos", on_click=lambda _: page.go("/veiculos"), width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20)
+                )
+            )
+            exibir_lista_veiculos(None)  # Carrega a lista ao entrar na rota
+        elif page.route == "/editar_veiculo":
+            page.views.append(
+                View(
+                    "/editar_veiculo",
+                    [
+                        AppBar(title=Text("Editar Veículo"), bgcolor=Colors.YELLOW_700),
+                        edit_marca_veiculo,
+                        edit_modelo_veiculo,
+                        edit_placa_veiculo,
+                        edit_ano_veiculo,
+                        ElevatedButton("Salvar Alterações", on_click=salvar_editar_veiculo, width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                        ElevatedButton("Voltar à Lista", on_click=lambda _: page.go("/lista_veiculos"), width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20),
+                    scroll="auto"
+                )
+            )
+        elif page.route == "/detalhes_veiculo":
+            page.views.append(
+                View(
+                    "/detalhes_veiculo",
+                    [
+                        AppBar(title=Text("Detalhes do Veículo"), bgcolor=Colors.YELLOW_700),
+                        txt_detalhes,
+                        ElevatedButton("Voltar à Lista", on_click=lambda _: page.go("/lista_veiculos"), width=350,
+                                       color=ft.CupertinoColors.SYSTEM_PURPLE),
+                    ],
+                    bgcolor=Colors.PURPLE_900,
+                    horizontal_alignment=CrossAxisAlignment.CENTER,
+                    padding=ft.padding.all(20)
+                )
+            )
+
+        # Rotas de Ordens de Serviço
+        elif page.route == "/ordens_servico":
+            page.views.append(
+                View(
+                    "/ordens_servico",
+                    [
+                        Image(src="https://placehold.co/100x100/000000/FFFFFF?text=OS"),
+                        AppBar(title=Text("Ordens de Serviço"), bgcolor=Colors.YELLOW_700),
+                        ElevatedButton("Cadastrar Ordem de Serviço",
+                                       on_click=lambda _: page.go("/cadastro_ordem_servico"),
+                                       width=250, color=ft.CupertinoColors.SYSTEM_PURPLE),
+                        ElevatedButton("Visualizar Ordens de Serviço",
+                                       on_click=lambda _: page.go("/lista_ordens_servico"),
