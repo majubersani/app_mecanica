@@ -421,7 +421,7 @@ def main(page: ft.Page):
                       nome_cliente=None, edit_endereco_cliente=None, lv_clientes=None, edit_cpf_cliente=None,
                       edit_telefone_cliente=None, edit_nome_cliente=None, marca_veiculo=None, modelo_veiculo=None,
                       placa_veiculo=None, ano_veiculo=None, dd_cliente_veiculo=None, lv_veiculos=None,
-                      edit_marca_veiculo=None, edit_modelo_veiculo=None):
+                      edit_marca_veiculo=None, edit_modelo_veiculo=None, edit_ano_veiculo=None, edit_placa_veiculo=None):
         """Gerencia as visualizações da aplicação com base na rota."""
         page.views.clear()
 
@@ -597,7 +597,7 @@ def main(page: ft.Page):
             page.views.append(
                 View(
                     "/editar_veiculo",
-                    [
+                    {
                         AppBar(title=Text("Editar Veículo"), bgcolor=Colors.YELLOW_700),
                         edit_marca_veiculo,
                         edit_modelo_veiculo,
@@ -607,7 +607,7 @@ def main(page: ft.Page):
                                        color=ft.CupertinoColors.SYSTEM_PURPLE),
                         ElevatedButton("Voltar à Lista", on_click=lambda _: page.go("/lista_veiculos"), width=350,
                                        color=ft.CupertinoColors.SYSTEM_PURPLE),
-                    ],
+                    },
                     bgcolor=Colors.PURPLE_900,
                     horizontal_alignment=CrossAxisAlignment.CENTER,
                     padding=ft.padding.all(20),
@@ -642,4 +642,7 @@ def main(page: ft.Page):
                                        on_click=lambda _: page.go("/cadastro_ordem_servico"),
                                        width=250, color=ft.CupertinoColors.SYSTEM_PURPLE),
                         ElevatedButton("Visualizar Ordens de Serviço",
-                                       on_click=lambda _: page.go("/lista_ordens_servico"),
+                                       on_click=lambda _: page.go("/lista_ordens_servico"),)]
+
+if __name__ == "__main__":
+    ft.app(target=main)
